@@ -24,11 +24,12 @@ USERS = {
 # Oracle Database Configuration
 # Update these with your actual Oracle connection details
 ORACLE_CONFIG = {
-    'host': 'localhost',
+    'host': 'UNKNOWN',  # ⚠️ UPDATE THIS - Ask your IT team for the database server IP/hostname
     'port': 1521,
-    'service_name': 'ORCL',
-    'username': 'fafif',
-    'password': 'your_password_here',  # Use environment variable or wallet in production
+    'service_name': 'RECON_GEOX',
+    'username': 'danad',
+    'password': 'danad#2025',
+    # When you get the host, update it above and set USE_REAL_DATABASE = True below
 }
 
 # Dashboard Settings
