@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ALFA HLR System</title>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .animated-gradient {
+            background: linear-gradient(-45deg, #ED1C24, #C8102E, #A01018, #8B0E15);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .logo-container {
+            width: 220px;
+            height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(237, 28, 36, 0.3);
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: auto;
+        }
+
+        .input-field {
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(237, 28, 36, 0.2);
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #ED1C24 0%, #C8102E 100%);
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(237, 28, 36, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="animated-gradient min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md fade-in">
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+
+            <!-- Header with Logo -->
+            <div class="bg-gradient-to-r from-red-600 to-red-700 p-8 text-center">
+                <!-- ALFA Logo -->
+                <div class="logo-container mx-auto mb-4">
+                    <img src="{{ url_for('static', filename='images/alfa-logo.png') }}" alt="ALFA Logo">
+                </div>
+                <h1 class="text-2xl font-bold text-white">HLR Reconciliation System</h1>
+                <p class="text-red-100 text-sm mt-2">Secure Access Portal</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="p-8">
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700{% else %}bg-green-50 border-l-4 border-green-500 text-green-700{% endif %}">
+                                <div class="flex items-center">
+                                    <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2"></i>
+                                    <span>{{ message }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('login') }}" class="space-y-6">
+
+                    <!-- Username Field -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user text-red-600 mr-2"></i>
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            name="username"
+                            required
+                            autocomplete="username"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            placeholder="Enter your username"
+                        >
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            name="password"
+                            required
+                            autocomplete="current-password"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            placeholder="Enter your password"
+                        >
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                            <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                        </label>
+                        <a href="#" class="text-sm text-red-600 hover:text-red-800 font-semibold">
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button
+                        type="submit"
+                        class="login-btn w-full py-3 text-white font-bold rounded-lg shadow-lg"
+                    >
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Sign In
+                    </button>
+
+                </form>
+
+                <!-- Demo Credentials Info -->
+                <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h3 class="text-sm font-bold text-red-800 mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Demo Credentials
+                    </h3>
+                    <div class="text-xs text-red-700 space-y-1">
+                        <p><strong>Admin:</strong> admin / admin123</p>
+                        <p><strong>Operator:</strong> operator / operator123</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-8 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between text-xs text-gray-600">
+                    <span>
+                        <i class="fas fa-shield-alt text-red-600 mr-1"></i>
+                        Secure Connection
+                    </span>
+                    <span>&copy; 2025 ALFA</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Info Cards -->
+        <div class="mt-6 grid grid-cols-3 gap-3 text-white text-center text-sm">
+            <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-3">
+                <i class="fas fa-lock text-2xl mb-1"></i>
+                <p class="font-semibold">Secure</p>
+            </div>
+            <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-3">
+                <i class="fas fa-chart-line text-2xl mb-1"></i>
+                <p class="font-semibold">Real-time</p>
+            </div>
+            <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-3">
+                <i class="fas fa-database text-2xl mb-1"></i>
+                <p class="font-semibold">Connected</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Background Decorations -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+    </div>
+
+</body>
+</html>
