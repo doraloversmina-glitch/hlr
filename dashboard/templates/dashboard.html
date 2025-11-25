@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLR Reconciliation Dashboard</title>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            opacity: 0.1;
+        }
+
+        .refresh-btn {
+            transition: transform 0.3s;
+        }
+
+        .refresh-btn:active {
+            transform: rotate(180deg);
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-network-wired text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">HLR Reconciliation System</h1>
+                        <p class="text-blue-200 text-sm">Real-time Monitoring Dashboard</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm text-blue-200">Last Updated</p>
+                        <p class="font-semibold" id="lastUpdate">Loading...</p>
+                    </div>
+                    <button onclick="refreshDashboard()" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+
+        <!-- Key Metrics Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 fade-in">
+
+            <!-- Total Executions -->
+            <div class="card metric-card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <i class="fas fa-tasks metric-icon"></i>
+                <p class="text-blue-100 text-sm font-semibold uppercase">Total Executions</p>
+                <h3 class="text-4xl font-bold mt-2" id="totalExecutions">-</h3>
+                <p class="text-blue-100 text-xs mt-2">Last 50 runs</p>
+            </div>
+
+            <!-- Success Rate -->
+            <div class="card metric-card bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <i class="fas fa-check-circle metric-icon"></i>
+                <p class="text-green-100 text-sm font-semibold uppercase">Success Rate</p>
+                <h3 class="text-4xl font-bold mt-2" id="successRate">-</h3>
+                <p class="text-green-100 text-xs mt-2">
+                    <span id="successfulCount">-</span> successful runs
+                </p>
+            </div>
+
+            <!-- Active Errors -->
+            <div class="card metric-card bg-gradient-to-br from-red-500 to-red-600 text-white">
+                <i class="fas fa-exclamation-triangle metric-icon"></i>
+                <p class="text-red-100 text-sm font-semibold uppercase">Active Errors</p>
+                <h3 class="text-4xl font-bold mt-2" id="activeErrors">-</h3>
+                <p class="text-red-100 text-xs mt-2">Require attention</p>
+            </div>
+
+            <!-- Avg Duration -->
+            <div class="card metric-card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <i class="fas fa-clock metric-icon"></i>
+                <p class="text-purple-100 text-sm font-semibold uppercase">Avg Duration</p>
+                <h3 class="text-4xl font-bold mt-2" id="avgDuration">-</h3>
+                <p class="text-purple-100 text-xs mt-2">Per execution</p>
+            </div>
+
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 fade-in">
+
+            <!-- Hourly Executions Chart -->
+            <div class="card">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                    Hourly Execution Trends (24h)
+                </h3>
+                <canvas id="hourlyChart"></canvas>
+            </div>
+
+            <!-- Procedure Performance Chart -->
+            <div class="card">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                    Procedure Success Rates
+                </h3>
+                <canvas id="procedureChart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Data Tables Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 fade-in">
+
+            <!-- Recent Executions -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-history text-blue-600 mr-2"></i>
+                        Recent Executions
+                    </h3>
+                    <span class="text-sm text-gray-500">Last 10 runs</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Procedure</th>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Status</th>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Duration</th>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Records</th>
+                            </tr>
+                        </thead>
+                        <tbody id="executionsTable" class="divide-y divide-gray-200">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Errors -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-bug text-red-600 mr-2"></i>
+                        Recent Errors
+                    </h3>
+                    <span class="text-sm text-gray-500">Last 10 errors</span>
+                </div>
+                <div class="space-y-3" id="errorsContainer">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Procedure Performance Table -->
+        <div class="card fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-server text-purple-600 mr-2"></i>
+                Procedure Performance Overview
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-700 font-semibold">Procedure Name</th>
+                            <th class="px-4 py-3 text-center text-gray-700 font-semibold">Total Runs</th>
+                            <th class="px-4 py-3 text-center text-gray-700 font-semibold">Success Rate</th>
+                            <th class="px-4 py-3 text-center text-gray-700 font-semibold">Avg Duration</th>
+                            <th class="px-4 py-3 text-left text-gray-700 font-semibold">Last Run</th>
+                        </tr>
+                    </thead>
+                    <tbody id="procedureTable" class="divide-y divide-gray-200">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-600 text-sm">
+            <p>&copy; 2025 HLR Reconciliation System v1.0 | Built with Flask + TailwindCSS + Chart.js</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        let hourlyChart, procedureChart;
+
+        // Initialize dashboard
+        async function initDashboard() {
+            await Promise.all([
+                loadMetrics(),
+                loadExecutions(),
+                loadErrors(),
+                loadProcedurePerformance(),
+                loadHourlyStats()
+            ]);
+            updateTimestamp();
+        }
+
+        // Load key metrics
+        async function loadMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                const data = await response.json();
+
+                document.getElementById('totalExecutions').textContent = data.total_executions;
+                document.getElementById('successRate').textContent = data.success_rate + '%';
+                document.getElementById('successfulCount').textContent = data.successful_executions;
+                document.getElementById('activeErrors').textContent = data.active_errors;
+                document.getElementById('avgDuration').textContent = Math.round(data.average_duration_seconds) + 's';
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+
+        // Load recent executions
+        async function loadExecutions() {
+            try {
+                const response = await fetch('/api/executions?limit=10');
+                const data = await response.json();
+
+                const tbody = document.getElementById('executionsTable');
+                tbody.innerHTML = data.map(exec => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-gray-700 font-medium">${exec.procedure_name.replace('RECONCILIATION_INTERFACES.', '')}</td>
+                        <td class="px-4 py-3">
+                            <span class="status-badge status-${exec.status.toLowerCase()}">
+                                ${exec.status}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600">${exec.duration_seconds}s</td>
+                        <td class="px-4 py-3 text-gray-600">${exec.records_processed.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading executions:', error);
+            }
+        }
+
+        // Load recent errors
+        async function loadErrors() {
+            try {
+                const response = await fetch('/api/errors?limit=10');
+                const data = await response.json();
+
+                const container = document.getElementById('errorsContainer');
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No recent errors</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(error => `
+                    <div class="border-l-4 ${error.resolved ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'} p-3 rounded">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-800">${error.procedure_name}</p>
+                                <p class="text-sm text-gray-600 mt-1">${error.error_message}</p>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="far fa-clock"></i> ${error.error_timestamp}
+                                </p>
+                            </div>
+                            <span class="text-xs font-semibold px-2 py-1 rounded ${
+                                error.severity === 'CRITICAL' ? 'bg-red-200 text-red-800' :
+                                error.severity === 'HIGH' ? 'bg-orange-200 text-orange-800' :
+                                'bg-yellow-200 text-yellow-800'
+                            }">
+                                ${error.severity}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading errors:', error);
+            }
+        }
+
+        // Load procedure performance table
+        async function loadProcedurePerformance() {
+            try {
+                const response = await fetch('/api/procedure-performance');
+                const data = await response.json();
+
+                const tbody = document.getElementById('procedureTable');
+                tbody.innerHTML = data.map(proc => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-gray-700 font-medium">${proc.procedure_name}</td>
+                        <td class="px-4 py-3 text-center text-gray-600">${proc.total_runs}</td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center">
+                                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: ${proc.success_rate}%"></div>
+                                </div>
+                                <span class="text-gray-700 font-semibold">${proc.success_rate}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-600">${proc.avg_duration_seconds}s</td>
+                        <td class="px-4 py-3 text-gray-600">${proc.last_run_time}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading procedure performance:', error);
+            }
+        }
+
+        // Load and render hourly stats chart
+        async function loadHourlyStats() {
+            try {
+                const response = await fetch('/api/hourly-stats');
+                const data = await response.json();
+
+                const ctx = document.getElementById('hourlyChart').getContext('2d');
+
+                if (hourlyChart) hourlyChart.destroy();
+
+                hourlyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => d.hour),
+                        datasets: [
+                            {
+                                label: 'Successful',
+                                data: data.map(d => d.successful),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: 'Failed',
+                                data: data.map(d => d.failed),
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Create procedure chart
+                const procResponse = await fetch('/api/procedure-performance');
+                const procData = await procResponse.json();
+
+                const procCtx = document.getElementById('procedureChart').getContext('2d');
+
+                if (procedureChart) procedureChart.destroy();
+
+                procedureChart = new Chart(procCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: procData.map(p => p.procedure_name.replace('P', '').replace('_', ' ')),
+                        datasets: [{
+                            label: 'Success Rate (%)',
+                            data: procData.map(p => p.success_rate),
+                            backgroundColor: procData.map(p =>
+                                p.success_rate >= 95 ? '#10b981' :
+                                p.success_rate >= 80 ? '#f59e0b' :
+                                '#ef4444'
+                            ),
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error loading hourly stats:', error);
+            }
+        }
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+
+        // Refresh dashboard
+        async function refreshDashboard() {
+            const btn = event.target.closest('button');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner inline-block"></div>';
+
+            await initDashboard();
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            initDashboard();
+        }, 30000);
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+
+</body>
+</html>
