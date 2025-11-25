@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLR Reconciliation Dashboard - Standalone</title>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            opacity: 0.1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-network-wired text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">HLR Reconciliation System</h1>
+                        <p class="text-blue-200 text-sm">Real-time Monitoring Dashboard (Standalone)</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm text-blue-200">Last Updated</p>
+                        <p class="font-semibold" id="lastUpdate">Just now</p>
+                    </div>
+                    <button onclick="refreshDashboard()" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+
+        <!-- Key Metrics Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 fade-in">
+
+            <!-- Total Executions -->
+            <div class="card metric-card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <i class="fas fa-tasks metric-icon"></i>
+                <p class="text-blue-100 text-sm font-semibold uppercase">Total Executions</p>
+                <h3 class="text-4xl font-bold mt-2" id="totalExecutions">152</h3>
+                <p class="text-blue-100 text-xs mt-2">Last 50 runs</p>
+            </div>
+
+            <!-- Success Rate -->
+            <div class="card metric-card bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <i class="fas fa-check-circle metric-icon"></i>
+                <p class="text-green-100 text-sm font-semibold uppercase">Success Rate</p>
+                <h3 class="text-4xl font-bold mt-2" id="successRate">94.7%</h3>
+                <p class="text-green-100 text-xs mt-2">
+                    <span id="successfulCount">144</span> successful runs
+                </p>
+            </div>
+
+            <!-- Active Errors -->
+            <div class="card metric-card bg-gradient-to-br from-red-500 to-red-600 text-white">
+                <i class="fas fa-exclamation-triangle metric-icon"></i>
+                <p class="text-red-100 text-sm font-semibold uppercase">Active Errors</p>
+                <h3 class="text-4xl font-bold mt-2" id="activeErrors">3</h3>
+                <p class="text-red-100 text-xs mt-2">Require attention</p>
+            </div>
+
+            <!-- Avg Duration -->
+            <div class="card metric-card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <i class="fas fa-clock metric-icon"></i>
+                <p class="text-purple-100 text-sm font-semibold uppercase">Avg Duration</p>
+                <h3 class="text-4xl font-bold mt-2" id="avgDuration">287s</h3>
+                <p class="text-purple-100 text-xs mt-2">Per execution</p>
+            </div>
+
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 fade-in">
+
+            <!-- Hourly Executions Chart -->
+            <div class="card">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                    Hourly Execution Trends (24h)
+                </h3>
+                <canvas id="hourlyChart"></canvas>
+            </div>
+
+            <!-- Procedure Performance Chart -->
+            <div class="card">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                    Procedure Success Rates
+                </h3>
+                <canvas id="procedureChart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Data Tables Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 fade-in">
+
+            <!-- Recent Executions -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-history text-blue-600 mr-2"></i>
+                        Recent Executions
+                    </h3>
+                    <span class="text-sm text-gray-500">Last 10 runs</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Procedure</th>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Status</th>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Duration</th>
+                                <th class="px-4 py-2 text-left text-gray-700 font-semibold">Records</th>
+                            </tr>
+                        </thead>
+                        <tbody id="executionsTable" class="divide-y divide-gray-200">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Errors -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-bug text-red-600 mr-2"></i>
+                        Recent Errors
+                    </h3>
+                    <span class="text-sm text-gray-500">Last 5 errors</span>
+                </div>
+                <div class="space-y-3" id="errorsContainer">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Procedure Performance Table -->
+        <div class="card fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-server text-purple-600 mr-2"></i>
+                Procedure Performance Overview
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-700 font-semibold">Procedure Name</th>
+                            <th class="px-4 py-3 text-center text-gray-700 font-semibold">Total Runs</th>
+                            <th class="px-4 py-3 text-center text-gray-700 font-semibold">Success Rate</th>
+                            <th class="px-4 py-3 text-center text-gray-700 font-semibold">Avg Duration</th>
+                            <th class="px-4 py-3 text-left text-gray-700 font-semibold">Last Run</th>
+                        </tr>
+                    </thead>
+                    <tbody id="procedureTable" class="divide-y divide-gray-200">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-600 text-sm">
+            <p>&copy; 2025 HLR Reconciliation System v1.0 | Standalone Dashboard</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript with Embedded Data -->
+    <script>
+        // Mock Data
+        const mockData = {
+            executions: [
+                { procedure: 'P1_MAIN_SYS_INTERFACES', status: 'SUCCESS', duration: 342, records: 45230 },
+                { procedure: 'P6_VOLTE_INTERFACES', status: 'SUCCESS', duration: 156, records: 12450 },
+                { procedure: 'P4_CP_INTERFACES', status: 'WARNING', duration: 289, records: 8900 },
+                { procedure: 'P2_POST_PREP_SERV_INTERFACES', status: 'SUCCESS', duration: 401, records: 52100 },
+                { procedure: 'P7_DATACARD_INTERFACES', status: 'SUCCESS', duration: 178, records: 3200 },
+                { procedure: 'P3_PREP_INTERFACES', status: 'FAILED', duration: 89, records: 0 },
+                { procedure: 'P5_ALFA_CP_INTERFACES', status: 'SUCCESS', duration: 234, records: 15600 },
+                { procedure: 'P1_MAIN_SYS_INTERFACES', status: 'SUCCESS', duration: 356, records: 46800 },
+                { procedure: 'P6_VOLTE_INTERFACES', status: 'SUCCESS', duration: 145, records: 11900 },
+                { procedure: 'P4_CP_INTERFACES', status: 'SUCCESS', duration: 267, records: 9200 }
+            ],
+            errors: [
+                { procedure: 'P3_PREP_INTERFACES', severity: 'CRITICAL', message: 'TABLE_CREATION_FAILED: Unable to create staging table', time: '2025-11-25 09:15:23', resolved: false },
+                { procedure: 'P1_MAIN_SYS_INTERFACES', severity: 'HIGH', message: 'INDEX_CREATION_FAILED: Tablespace full', time: '2025-11-25 07:42:10', resolved: true },
+                { procedure: 'P6_VOLTE_INTERFACES', severity: 'MEDIUM', message: 'DATA_CONVERSION_ERROR: Invalid IMSI format', time: '2025-11-25 06:33:45', resolved: false }
+            ],
+            procedures: [
+                { name: 'P1_MAIN_SYS_INTERFACES', runs: 89, success_rate: 96.6, avg_duration: 345, last_run: '2025-11-25 09:30:12' },
+                { name: 'P2_POST_PREP_SERV_INTERFACES', runs: 76, success_rate: 97.4, avg_duration: 398, last_run: '2025-11-25 09:25:45' },
+                { name: 'P3_PREP_INTERFACES', runs: 45, success_rate: 88.9, avg_duration: 156, last_run: '2025-11-25 09:15:23' },
+                { name: 'P4_CP_INTERFACES', runs: 102, success_rate: 94.1, avg_duration: 278, last_run: '2025-11-25 09:28:01' },
+                { name: 'P5_ALFA_CP_INTERFACES', runs: 67, success_rate: 95.5, avg_duration: 232, last_run: '2025-11-25 09:22:18' },
+                { name: 'P6_VOLTE_INTERFACES', runs: 134, success_rate: 98.5, avg_duration: 151, last_run: '2025-11-25 09:31:05' },
+                { name: 'P7_DATACARD_INTERFACES', runs: 58, success_rate: 93.1, avg_duration: 189, last_run: '2025-11-25 09:26:34' }
+            ],
+            hourlyStats: [
+                { hour: '09:00', successful: 18, failed: 1 },
+                { hour: '08:00', successful: 22, failed: 0 },
+                { hour: '07:00', successful: 19, failed: 2 },
+                { hour: '06:00', successful: 16, failed: 1 },
+                { hour: '05:00', successful: 14, failed: 0 },
+                { hour: '04:00', successful: 11, failed: 0 },
+                { hour: '03:00', successful: 8, failed: 1 },
+                { hour: '02:00', successful: 6, failed: 0 },
+                { hour: '01:00', successful: 5, failed: 0 },
+                { hour: '00:00', successful: 7, failed: 0 },
+                { hour: '23:00', successful: 9, failed: 1 },
+                { hour: '22:00', successful: 13, failed: 0 }
+            ]
+        };
+
+        let hourlyChart, procedureChart;
+
+        // Load executions table
+        function loadExecutions() {
+            const tbody = document.getElementById('executionsTable');
+            tbody.innerHTML = mockData.executions.map(exec => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-700 font-medium">${exec.procedure}</td>
+                    <td class="px-4 py-3">
+                        <span class="status-badge status-${exec.status.toLowerCase()}">
+                            ${exec.status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">${exec.duration}s</td>
+                    <td class="px-4 py-3 text-gray-600">${exec.records.toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Load errors
+        function loadErrors() {
+            const container = document.getElementById('errorsContainer');
+            container.innerHTML = mockData.errors.map(error => `
+                <div class="border-l-4 ${error.resolved ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'} p-3 rounded">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <p class="font-semibold text-gray-800">${error.procedure}</p>
+                            <p class="text-sm text-gray-600 mt-1">${error.message}</p>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="far fa-clock"></i> ${error.time}
+                            </p>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-1 rounded ${
+                            error.severity === 'CRITICAL' ? 'bg-red-200 text-red-800' :
+                            error.severity === 'HIGH' ? 'bg-orange-200 text-orange-800' :
+                            'bg-yellow-200 text-yellow-800'
+                        }">
+                            ${error.severity}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load procedure performance
+        function loadProcedurePerformance() {
+            const tbody = document.getElementById('procedureTable');
+            tbody.innerHTML = mockData.procedures.map(proc => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-700 font-medium">${proc.name}</td>
+                    <td class="px-4 py-3 text-center text-gray-600">${proc.runs}</td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center">
+                            <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-green-600 h-2 rounded-full" style="width: ${proc.success_rate}%"></div>
+                            </div>
+                            <span class="text-gray-700 font-semibold">${proc.success_rate}%</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-center text-gray-600">${proc.avg_duration}s</td>
+                    <td class="px-4 py-3 text-gray-600">${proc.last_run}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Load charts
+        function loadCharts() {
+            // Hourly chart
+            const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+            if (hourlyChart) hourlyChart.destroy();
+
+            hourlyChart = new Chart(hourlyCtx, {
+                type: 'line',
+                data: {
+                    labels: mockData.hourlyStats.map(d => d.hour),
+                    datasets: [
+                        {
+                            label: 'Successful',
+                            data: mockData.hourlyStats.map(d => d.successful),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Failed',
+                            data: mockData.hourlyStats.map(d => d.failed),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Procedure chart
+            const procCtx = document.getElementById('procedureChart').getContext('2d');
+            if (procedureChart) procedureChart.destroy();
+
+            procedureChart = new Chart(procCtx, {
+                type: 'bar',
+                data: {
+                    labels: mockData.procedures.map(p => p.name.replace('P', '').replace('_INTERFACES', '')),
+                    datasets: [{
+                        label: 'Success Rate (%)',
+                        data: mockData.procedures.map(p => p.success_rate),
+                        backgroundColor: mockData.procedures.map(p =>
+                            p.success_rate >= 95 ? '#10b981' :
+                            p.success_rate >= 90 ? '#f59e0b' :
+                            '#ef4444'
+                        )
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        // Refresh dashboard
+        function refreshDashboard() {
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            loadExecutions();
+            loadErrors();
+            loadProcedurePerformance();
+            loadCharts();
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshDashboard();
+        });
+    </script>
+
+</body>
+</html>
