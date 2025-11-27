@@ -1,0 +1,116 @@
+================================================================================
+                              BMB S.A.L.
+        Information and Communication Technology Solutions Provider
+================================================================================
+
+Head Office: Furn El-Chebbak, Baabda, 2nd Floor, Gharios Building
+Beirut, Lebanon
+Tel: +961 1 XXX XXX | Fax: +961 1 XXX XXX
+Email: info@bmbgroup.com | Website: www.bmbgroup.com
+Tax Registration No: XXXXXXXXXX
+Commercial Registration No: XXXXXXXXXX
+
+================================================================================
+                                 INVOICE
+================================================================================
+
+INVOICE NO:         BMB-2025-00123
+INVOICE DATE:       January 27, 2025
+DUE DATE:           February 26, 2025
+PAYMENT TERMS:      Net 30 Days
+
+--------------------------------------------------------------------------------
+BILL TO:
+--------------------------------------------------------------------------------
+Company Name:       [Customer Company Name]
+Attention:          [Contact Person Name]
+Address:            [Street Address]
+                    [City, Postal Code]
+                    Lebanon
+Tax ID:             [Customer Tax ID]
+Phone:              [Customer Phone]
+Email:              [Customer Email]
+
+--------------------------------------------------------------------------------
+DESCRIPTION OF SERVICES/PRODUCTS
+--------------------------------------------------------------------------------
+
+Item  Description                              Qty    Unit Price    Amount (USD)
+----  --------------------------------------  -----   ----------    ------------
+1.    Cloud Solutions Setup & Configuration     1     5,000.00        5,000.00
+      - Azure Cloud Infrastructure
+      - Migration Services
+      - Initial Configuration
+
+2.    Cyber Security Assessment                 1     3,500.00        3,500.00
+      - Network Security Audit
+      - Vulnerability Assessment
+      - Security Report & Recommendations
+
+3.    Cisco Enterprise Networking Equipment     2     4,250.00        8,500.00
+      - Cisco Catalyst Switches
+      - Installation & Configuration
+
+4.    Professional Services (40 hours)         40       150.00        6,000.00
+      - Technical Support
+      - System Integration
+      - Training Services
+
+5.    Annual Maintenance & Support Contract     1     2,800.00        2,800.00
+      - 24/7 Technical Support
+      - Remote Monitoring
+      - Regular System Updates
+
+--------------------------------------------------------------------------------
+                                                        SUBTOTAL:    25,800.00 USD
+                                                        VAT (11%):    2,838.00 USD
+                                                                    -------------
+                                                    TOTAL AMOUNT:    28,638.00 USD
+================================================================================
+
+PAYMENT INFORMATION:
+-------------------
+Bank Name:          Bank Audi S.A.L.
+Account Name:       BMB S.A.L.
+Account Number:     XXXXXXXXXXXXXXXXXX
+SWIFT Code:         AUDBLBBX
+IBAN:              LB XX XXXX XXXX XXXX XXXX XXXX XXXX
+
+Alternative Payment:
+- Bank Transfer
+- Certified Check payable to: BMB S.A.L.
+
+PAYMENT INSTRUCTIONS:
+- Please include invoice number in payment reference
+- Payment is due within 30 days from invoice date
+- Late payments may incur 1.5% monthly interest charge
+
+--------------------------------------------------------------------------------
+TERMS & CONDITIONS:
+-------------------
+1. Payment terms are Net 30 days from invoice date
+2. All prices are in US Dollars (USD)
+3. Services are provided as per the agreed Statement of Work (SOW)
+4. Hardware warranty as per manufacturer specifications
+5. This invoice is subject to Lebanese tax regulations
+6. Any disputes should be resolved according to Lebanese commercial law
+
+--------------------------------------------------------------------------------
+
+For any inquiries regarding this invoice, please contact:
+Finance Department: finance@bmbgroup.com
+Phone: +961 1 XXX XXX Ext. 123
+
+Thank you for your business!
+
+================================================================================
+                        Authorized Signature
+
+                        _________________________
+                        Name: [Authorized Person]
+                        Title: Finance Manager
+                        Date: January 27, 2025
+================================================================================
+
+This is a computer-generated invoice and is valid without signature.
+BMB S.A.L. - Established 1995 | Cisco Gold Partner | Microsoft Gold Partner
