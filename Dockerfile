@@ -17,14 +17,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY excel_comparator.py .
 COPY compare_excel.py .
-COPY app.py .
+COPY app_secure_simple.py .
 COPY templates/ templates/
 
 # Create necessary directories
 RUN mkdir -p uploads outputs
 
 # Set environment variables
-ENV FLASK_APP=app.py
+ENV FLASK_APP=app_secure_simple.py
 ENV FLASK_ENV=production
 ENV PORT=5000
 
@@ -32,4 +32,4 @@ ENV PORT=5000
 EXPOSE 5000
 
 # Run the application
-CMD gunicorn -w 4 -b 0.0.0.0:$PORT app:app --timeout 120
+CMD gunicorn -w 4 -b 0.0.0.0:$PORT app_secure_simple:app --timeout 120
