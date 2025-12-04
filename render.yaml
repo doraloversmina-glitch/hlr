@@ -2,8 +2,8 @@ services:
   - type: web
     name: excel-comparator
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT app:app --timeout 120
+    buildCommand: pip install -r requirements_secure.txt
+    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT app_secure_simple:app --timeout 120
     envVars:
       - key: FLASK_ENV
         value: production
