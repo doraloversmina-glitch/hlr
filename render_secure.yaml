@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: excel-comparator-secure
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT app_secure:app --timeout 120
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: APP_PASSWORD_HASH
+        # Generate with: python -c "import hashlib; print(hashlib.sha256('YourPassword'.encode()).hexdigest())"
+        value: 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+        # Default password: admin (CHANGE THIS!)
+    healthCheckPath: /health

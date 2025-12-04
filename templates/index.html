@@ -47,6 +47,33 @@
             color: #333;
             margin-bottom: 10px;
             font-size: 2.5em;
+            position: relative;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            background: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .security-indicator {
+            text-align: center;
+            color: #28a745;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            font-weight: 600;
         }
 
         .subtitle {
@@ -338,6 +365,8 @@
 </head>
 <body>
     <div class="container">
+        <a href="/logout" class="logout-btn">🚪 Logout</a>
+        <p class="security-indicator">🔒 Secure Session Active - Files Encrypted</p>
         <h1>📊 Excel File Comparator</h1>
         <p class="subtitle">Compare two Excel files and get detailed difference reports</p>
 
