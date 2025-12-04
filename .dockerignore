@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Test files
+test_*.xlsx
+differences.xlsx
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Uploads and outputs (created at runtime)
+uploads/
+outputs/
+
+# Development files
+create_test_files.py
