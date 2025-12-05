@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-42-gray;
+  }
+
+  body {
+    @apply bg-42-dark text-white font-mono;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-42-darker;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-42-gray hover:bg-42-cyan;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  /* Terminal box */
+  .terminal-box {
+    @apply bg-42-darker border border-42-gray rounded;
+    box-shadow: 0 0 10px rgba(0, 186, 188, 0.1);
+  }
+
+  /* Current line highlight */
+  .code-line-current {
+    @apply bg-42-cyan bg-opacity-10 border-l-2 border-42-cyan;
+  }
+
+  /* Code line */
+  .code-line {
+    @apply px-2 py-0.5 cursor-pointer hover:bg-42-gray hover:bg-opacity-30;
+    transition: background-color 150ms;
+  }
+
+  /* Memory block */
+  .memory-block {
+    @apply terminal-box p-3 font-mono text-xs;
+  }
+
+  .memory-block-allocated {
+    @apply border-green-500 bg-green-500 bg-opacity-5;
+  }
+
+  .memory-block-freed {
+    @apply border-red-500 bg-red-500 bg-opacity-5;
+  }
+
+  /* Button */
+  .btn {
+    @apply px-3 py-1.5 bg-42-gray hover:bg-42-light-gray
+           border border-42-gray transition-colors duration-200
+           font-mono text-xs flex items-center gap-1.5
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-42-cyan text-black hover:bg-opacity-80 border-42-cyan;
+  }
+
+  /* Tab button */
+  .tab-btn {
+    @apply px-3 py-2 text-xs text-gray-400 hover:text-white
+           border-b-2 border-transparent transition-colors;
+  }
+
+  .tab-btn-active {
+    @apply text-42-cyan border-42-cyan;
+  }
+
+  /* Variable display */
+  .variable-row {
+    @apply flex items-center gap-2 text-xs py-1 hover:bg-42-gray hover:bg-opacity-30
+           px-2 rounded transition-colors;
+  }
+
+  /* Error display */
+  .error-box {
+    @apply terminal-box border-red-500 bg-red-500 bg-opacity-10 p-3;
+  }
+
+  /* Log entry */
+  .log-entry {
+    @apply text-xs py-1 px-2 flex items-start gap-2 hover:bg-42-gray hover:bg-opacity-20;
+  }
+
+  /* Pointer arrow */
+  .pointer-arrow {
+    @apply text-yellow-400 font-bold;
+  }
+
+  /* Address */
+  .address {
+    @apply text-gray-500 text-xs font-mono;
+  }
+
+  /* Value */
+  .value {
+    @apply text-green-400 font-mono;
+  }
+}
+
+/* Animations */
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgb(0, 186, 188);
+  }
+  50% {
+    border-color: rgb(0, 255, 65);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-malloc {
+  animation: pulse-border 0.3s ease-in-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Strikethrough for freed memory */
+.freed-strikethrough {
+  position: relative;
+}
+
+.freed-strikethrough::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: rgb(239, 68, 68);
+  transform: rotate(-5deg);
+}
