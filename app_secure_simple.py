@@ -233,6 +233,23 @@ def health():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
 
+@app.route('/debug-password-check')
+def debug_password():
+    """Debug endpoint to check password hashes - REMOVE IN PRODUCTION"""
+    test_passwords = {
+        'SecurePass123!': hashlib.sha256('SecurePass123!'.encode()).hexdigest(),
+        'P@ssw0rd': hashlib.sha256('P@ssw0rd'.encode()).hexdigest(),
+    }
+
+    return jsonify({
+        'expected_hash_from_env': os.environ.get('APP_PASSWORD_HASH', 'NOT SET'),
+        'expected_hash_in_app': APP_PASSWORD_HASH,
+        'default_hash': hashlib.sha256('SecurePass123!'.encode()).hexdigest(),
+        'test_hashes': test_passwords,
+        'env_var_exists': 'APP_PASSWORD_HASH' in os.environ
+    })
+
+
 @app.before_request
 def cleanup_old_files():
     """Clean up old files periodically."""
