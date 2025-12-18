@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE DANAD.P1_MAIN_SYS_INTERFACES_TE(
+CREATE OR REPLACE PROCEDURE P1_MAIN_SYS_INTERFACES_OLD(
     INTEGRATION_LOG_ID IN VARCHAR2 DEFAULT '0',
     RESULT OUT VARCHAR2,
     P_ENT_TYPE IN NUMBER DEFAULT 4,
@@ -6,78 +6,59 @@ CREATE OR REPLACE PROCEDURE DANAD.P1_MAIN_SYS_INTERFACES_TE(
 ) IS
 
     -- =============================================================================================
-    --    Enhanced Version             : Test Edition with Performance Optimizations
-    --    Modified by                  : Performance Refactoring Team
-    --    Release                      : R1.1_TE
-    --    Modification Date            : 18/12/2025
-    --    Comments                     : Performance optimizations:
-    --                                   - **ELIMINATED 14 UPDATE statements** (replaced with NVL in CREATE)
-    --                                   - All objects use _TE suffix for test isolation
-    --                                   - Objects created under DANAD schema
-    --                                   - Enhanced activity tracing with timestamps
-    --                                   - FAFIF tables remain SELECT-only
-    --                                   - Same business logic, same output, faster execution
-    --   -------------------------------------------------------------------------------------------
-    --    Original Author              : FAF
-    --    Original Release             : R1.0
-    --    Original Date                : 31/10/2009
-    --    Pre-requisite(s)             : SV DMP (CLEAN_SV_ALL_UPD)
-    --                                   HLR DMP (HLR1 & HLR2)
-    --                                   MINSAT DMP (FAFIF.PPS_ABONNE_JOUR_MIGDB)
+    --    ENHANCED VERSION - Test Edition
+    --    Modified by                 : Performance Optimization Team
+    --    Release                     : R1.1_TE
+    --    Modification Date           : 18/12/2025
+    --    Comments                    : PERFORMANCE ENHANCEMENTS:
+    --                                  ✅ ELIMINATED 14 UPDATE statements (replaced with NVL)
+    --                                  ✅ All objects use _TE suffix (test isolation)
+    --                                  ✅ Objects created under DANAD schema
+    --                                  ✅ Enhanced activity tracing
+    --                                  ✅ FAFIF tables remain SELECT-only
+    --                                  ✅ Same business logic - Same output
+    -- =============================================================================================
+    --    Original Modified by        : FAF
+    --    Original Release            : R1.1
+    --    Original Modification Date  : 01/11/2009
+    --    Original Author             : FAF
+    --    Requirement book version    : V3.0
     -- =============================================================================================
 
-    -- Variables
-    SQL_TXT              VARCHAR2(8000);
-    RELEASE              VARCHAR2(20)    := 'R1.1_TE';
-    ENT_TYPE_CODE        NUMBER;
-    ENT_CODE             NUMBER;
-    CLIENT_ID            VARCHAR2(10);
-    SAS_TABLE            VARCHAR2(100);
-    REJ_TABLE            VARCHAR2(100);
-    HIST_TABLE           VARCHAR2(100);
-    CURRENT_DATE         VARCHAR2(100);
+    SQL_TXT             VARCHAR2(8000);
+    RELEASE             VARCHAR2(20)    := 'R1.1_TE';
+    ENT_TYPE_CODE       NUMBER;
+    ENT_CODE            NUMBER;
+    CLIENT_ID           VARCHAR2(10);
+    SAS_TABLE           VARCHAR2(100);
+    REJ_TABLE           VARCHAR2(100);
+    HIST_TABLE          VARCHAR2(100);
+    CURRENT_DATE        VARCHAR2(100);
 
-    -- Activity tracing
-    v_step               VARCHAR2(200);
-    v_start_time         TIMESTAMP;
-    v_end_time           TIMESTAMP;
-    v_rows_affected      NUMBER;
-
-    -- Exception declarations
-    TABLE_CREATION_FAILED   EXCEPTION;
-    INDEX_CREATION_FAILED   EXCEPTION;
-    TABLE_UPDATE_FAILED     EXCEPTION;
-    TABLE_INSERT_FAILED     EXCEPTION;
-    FATAL_ERROR             EXCEPTION;
-    TABLE_DROP_FAILED       EXCEPTION;
-    EMPTY_ERROR             EXCEPTION;
+    -- Activity tracing variables
+    v_step              VARCHAR2(200);
+    v_start_time        TIMESTAMP;
+    v_end_time          TIMESTAMP;
 
     -- Activity logging procedure
-    PROCEDURE log_activity(p_step VARCHAR2, p_start_time TIMESTAMP, p_end_time TIMESTAMP, p_rows NUMBER DEFAULT NULL) IS
-        v_duration NUMBER;
+    PROCEDURE log_step(p_message VARCHAR2) IS
     BEGIN
-        v_duration := EXTRACT(SECOND FROM (p_end_time - p_start_time)) +
-                      EXTRACT(MINUTE FROM (p_end_time - p_start_time)) * 60;
-        DBMS_OUTPUT.PUT_LINE('[' || TO_CHAR(p_end_time, 'HH24:MI:SS') || '] ' || p_step ||
-                           ' - Duration: ' || ROUND(v_duration, 2) || 's' ||
-                           CASE WHEN p_rows IS NOT NULL THEN ' - Rows: ' || p_rows ELSE '' END);
-    END log_activity;
+        DBMS_OUTPUT.PUT_LINE('[' || TO_CHAR(SYSTIMESTAMP, 'HH24:MI:SS') || '] ' || p_message);
+    END log_step;
 
 BEGIN
 
-    DBMS_OUTPUT.PUT_LINE('========================================');
-    DBMS_OUTPUT.PUT_LINE('P1_MAIN_SYS_INTERFACES_TE - Start');
-    DBMS_OUTPUT.PUT_LINE('Release: ' || RELEASE);
-    DBMS_OUTPUT.PUT_LINE('Timestamp: ' || TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS'));
-    DBMS_OUTPUT.PUT_LINE('========================================');
+    log_step('========================================');
+    log_step('P1_MAIN_SYS_INTERFACES_OLD - START');
+    log_step('Release: ' || RELEASE);
+    log_step('========================================');
 
-    UTILS_INTERFACES.INTERFACE_NAME := 'P1_MAIN_SYS_INTERFACES_TE';
+    UTILS_INTERFACES.INTERFACE_NAME := 'P1_MAIN_SYS_INTERFACES_OLD';
 
     -- ================================================================================================================
-    -- STEP 1: Create SYS_MINSAT_TE from CS4 DMP
+    -- STEP 1: Create SYS_MINSAT_TE (CS4 DMP)
     -- ================================================================================================================
-    v_step := 'Creating SYS_MINSAT_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 1: Creating SYS_MINSAT_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.SYS_MINSAT_TE NOLOGGING AS
                 SELECT DECODE(SUBSTR(SUBSTR(NUM_APPEL, 4), 1, 1),
@@ -91,25 +72,16 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    -- Create index
-    v_step := 'Creating index IX_MINSAT_MSISDN_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('SYS_MINSAT_TE', 'DANAD', 'IX_MINSAT_MSISDN_TE', 'MSISDN') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ SYS_MINSAT_TE created with index');
 
     -- ================================================================================================================
     -- STEP 2: Create APN_DATA_HLR1_TE
     -- ================================================================================================================
-    v_step := 'Creating APN_DATA_HLR1_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 2: Creating APN_DATA_HLR1_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.APN_DATA_HLR1_TE NOLOGGING AS
                 SELECT DECODE(SUBSTR(SUBSTR(D.MSISDN, 4), 1, 1),
@@ -126,24 +98,16 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating index IX_MSISDN_APN1_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('APN_DATA_HLR1_TE', 'DANAD', 'IX_MSISDN_APN1_TE', 'MSISDN_APN1') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ APN_DATA_HLR1_TE created with index');
 
     -- ================================================================================================================
     -- STEP 3: Create APN_DATA_HLR2_TE
     -- ================================================================================================================
-    v_step := 'Creating APN_DATA_HLR2_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 3: Creating APN_DATA_HLR2_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.APN_DATA_HLR2_TE NOLOGGING AS
                 SELECT DECODE(SUBSTR(SUBSTR(D.MSISDN, 4), 1, 1),
@@ -160,24 +124,16 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating index IX_MSISDN_APN2_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('APN_DATA_HLR2_TE', 'DANAD', 'IX_MSISDN_APN2_TE', 'MSISDN_APN2') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ APN_DATA_HLR2_TE created with index');
 
     -- ================================================================================================================
     -- STEP 4: Create REP_SV_MSISDN_IN_MISP_TE
     -- ================================================================================================================
-    v_step := 'Creating REP_SV_MSISDN_IN_MISP_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 4: Creating REP_SV_MSISDN_IN_MISP_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_SV_MSISDN_IN_MISP_TE NOLOGGING AS
                 SELECT *
@@ -189,14 +145,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ REP_SV_MSISDN_IN_MISP_TE created');
 
     -- ================================================================================================================
     -- STEP 5: Create REP_SV_MSISDN_NOT_MISP_TE
     -- ================================================================================================================
-    v_step := 'Creating REP_SV_MSISDN_NOT_MISP_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 5: Creating REP_SV_MSISDN_NOT_MISP_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_SV_MSISDN_NOT_MISP_TE NOLOGGING AS
                 SELECT *
@@ -207,14 +161,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ REP_SV_MSISDN_NOT_MISP_TE created');
 
     -- ================================================================================================================
-    -- STEP 6: Create MERGE_SYS_SV_CS4_TE (SV merged with CS4)
+    -- STEP 6: Create MERGE_SYS_SV_CS4_TE (SV + CS4)
     -- ================================================================================================================
-    v_step := 'Creating MERGE_SYS_SV_CS4_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 6: Creating MERGE_SYS_SV_CS4_TE (merging SV with CS4)');
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_SYS_SV_CS4_TE NOLOGGING AS
                 SELECT T.SERVICE_NAME AS MSISDN_SV,
@@ -251,12 +203,6 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating indexes on MERGE_SYS_SV_CS4_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('MERGE_SYS_SV_CS4_TE', 'DANAD', 'IX_MSISDN_SYS_MERG_SV_TE', 'MSISDN_SV') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
@@ -265,14 +211,12 @@ BEGIN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ MERGE_SYS_SV_CS4_TE created with indexes');
 
     -- ================================================================================================================
     -- STEP 7: Create CLEAN_ALL_SYS_MERGED_TE
     -- ================================================================================================================
-    v_step := 'Creating CLEAN_ALL_SYS_MERGED_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 7: Creating CLEAN_ALL_SYS_MERGED_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.CLEAN_ALL_SYS_MERGED_TE NOLOGGING AS
                 SELECT (CASE WHEN M.MSISDN_SV IS NULL THEN MSISDN_CS4
@@ -285,12 +229,6 @@ BEGIN
     IF UTILS_INTERFACES.CREATE_TABLE('CLEAN_ALL_SYS_MERGED_TE', 'DANAD', SQL_TXT) = 0 THEN
         RAISE TABLE_CREATION_FAILED;
     END IF;
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating indexes on CLEAN_ALL_SYS_MERGED_TE';
-    v_start_time := SYSTIMESTAMP;
 
     IF UTILS_INTERFACES.CREATE_INDEX('CLEAN_ALL_SYS_MERGED_TE', 'DANAD', 'IX_MSISDN_SYSM_TE', 'MSISDN_SYS') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
@@ -308,14 +246,12 @@ BEGIN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ CLEAN_ALL_SYS_MERGED_TE created with indexes');
 
     -- ================================================================================================================
     -- STEP 8: Create MERGE_HLR1_HLR2_1_TE
     -- ================================================================================================================
-    v_step := 'Creating MERGE_HLR1_HLR2_1_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 8: Creating MERGE_HLR1_HLR2_1_TE (left outer join)');
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_HLR1_HLR2_1_TE NOLOGGING AS
                 SELECT DECODE(SUBSTR(SUBSTR(T.NUM_APPEL, 4), 1, 1), 7, SUBSTR(T.NUM_APPEL, 4),
@@ -373,14 +309,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ MERGE_HLR1_HLR2_1_TE created');
 
     -- ================================================================================================================
     -- STEP 9: Create MERGE_HLR1_HLR2_2_TE
     -- ================================================================================================================
-    v_step := 'Creating MERGE_HLR1_HLR2_2_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 9: Creating MERGE_HLR1_HLR2_2_TE (right outer join)');
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_HLR1_HLR2_2_TE NOLOGGING AS
                 SELECT DECODE(SUBSTR(SUBSTR(T.NUM_APPEL, 4), 1, 1), 7, SUBSTR(T.NUM_APPEL, 4),
@@ -438,40 +372,54 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ MERGE_HLR1_HLR2_2_TE created');
 
     -- ================================================================================================================
-    -- STEP 10: Create MERGE_HLR1_HLR2_TE with NULL-to-0 conversion
-    -- OPTIMIZATION: Replaces 14 separate UPDATE statements with NVL in CREATE TABLE
+    -- STEP 10: Create MERGE_HLR1_HLR2_TE with NVL OPTIMIZATION
+    -- *** CRITICAL OPTIMIZATION: Replaces 14 separate UPDATE statements ***
     -- ================================================================================================================
-    v_step := 'Creating MERGE_HLR1_HLR2_TE (NVL optimization - replaces 14 UPDATEs)';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 10: Creating MERGE_HLR1_HLR2_TE with NVL (ELIMINATES 14 UPDATEs!)');
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_HLR1_HLR2_TE NOLOGGING AS
                 SELECT MSISDN_HLR1, IMSI_1, NUM_APPEL_1, CFU_1, CFB_1, CFNRY_1, CFNRC_1, SPN_1,
                        CAW_1, HOLD_1, MPTY_1, AOC_1, BAOC_1, BOIC_1, BOIEX_1, BAIC_1, BICRO_1,
-                       CAT_1, NVL(OBO_1, 0) AS OBO_1, NVL(OBI_1, 0) AS OBI_1, NVL(OBR_1, 0) AS OBR_1,
+                       CAT_1, 
+                       NVL(OBO_1, 0) AS OBO_1, 
+                       NVL(OBI_1, 0) AS OBI_1, 
+                       NVL(OBR_1, 0) AS OBR_1,
                        OBOPRI_1, OBOPRE_1, OBSSM_1, OSB1_1, OSB2_1, OSB3_1, OSB4_1, OFA_1, PWD_1,
                        ICI_1, OIN_1, TIN_1, CLIP_1, CLIR_1, COLP_1, COLR_1, SOCB_1, SOCFU_1,
                        SOCFB_1, SOCFRY_1, SOCFRC_1, SOCLIP_1, SOCLIR_1, SOCOLP_1, TS11_1, TS21_1,
                        TS22_1, TS62_1, TSD1_1, BS21_1, BS22_1, BS23_1, BS24_1, BS25_1, BS26_1,
                        BS31_1, BS32_1, BS33_1, BS34_1, DBSG_1, TS61_1, CUG_1, REGSER_1, PICI_1,
-                       DCF_1, SODCF_1, SOSDCF_1, CAPL_1, NVL(OICK_1, 0) AS OICK_1,
-                       NVL(TICK_1, 0) AS TICK_1, NAM_1, TSMO_1, REDUND_1, OCSI_1,
-                       NVL(RSA_1, 0) AS RSA_1, RM_1, NVL(OBP_1, 0) AS OBP_1, OSMCSI_1,
+                       DCF_1, SODCF_1, SOSDCF_1, CAPL_1, 
+                       NVL(OICK_1, 0) AS OICK_1,
+                       NVL(TICK_1, 0) AS TICK_1, 
+                       NAM_1, TSMO_1, REDUND_1, OCSI_1,
+                       NVL(RSA_1, 0) AS RSA_1, 
+                       RM_1, 
+                       NVL(OBP_1, 0) AS OBP_1, 
+                       OSMCSI_1,
                        STYPE_1, SCHAR_1, REDMCH_1, GPRCSI_1, BS3G_1, DATE_INSERTION_HLR1,
                        MSISDN_HLR2, IMSI_2, NUM_APPEL_2, CFU_2, CFB_2, CFNRY_2, CFNRC_2, SPN_2,
                        CAW_2, HOLD_2, MPTY_2, AOC_2, BAOC_2, BOIC_2, BOIEX_2, BAIC_2, BICRO_2,
-                       CAT_2, NVL(OBO_2, 0) AS OBO_2, NVL(OBI_2, 0) AS OBI_2, NVL(OBR_2, 0) AS OBR_2,
+                       CAT_2, 
+                       NVL(OBO_2, 0) AS OBO_2, 
+                       NVL(OBI_2, 0) AS OBI_2, 
+                       NVL(OBR_2, 0) AS OBR_2,
                        OBOPRI_2, OBOPRE_2, OBSSM_2, OSB1_2, OSB2_2, OSB3_2, OSB4_2, OFA_2, PWD_2,
                        ICI_2, OIN_2, TIN_2, CLIP_2, CLIR_2, COLP_2, COLR_2, SOCB_2, SOCFU_2,
                        SOCFB_2, SOCFRY_2, SOCFRC_2, SOCLIP_2, SOCLIR_2, SOCOLP_2, TS11_2, TS21_2,
                        TS22_2, TS62_2, TSD1_2, BS21_2, BS22_2, BS23_2, BS24_2, BS25_2, BS26_2,
                        BS31_2, BS32_2, BS33_2, BS34_2, DBSG_2, TS61_2, CUG_2, REGSER_2, PICI_2,
-                       DCF_2, SODCF_2, SOSDCF_2, CAPL_2, NVL(OICK_2, 0) AS OICK_2,
-                       NVL(TICK_2, 0) AS TICK_2, NAM_2, TSMO_2, REDUND_2, OCSI_2,
-                       NVL(RSA_2, 0) AS RSA_2, RM_2, NVL(OBP_2, 0) AS OBP_2, OSMCSI_2,
+                       DCF_2, SODCF_2, SOSDCF_2, CAPL_2, 
+                       NVL(OICK_2, 0) AS OICK_2,
+                       NVL(TICK_2, 0) AS TICK_2, 
+                       NAM_2, TSMO_2, REDUND_2, OCSI_2,
+                       NVL(RSA_2, 0) AS RSA_2, 
+                       RM_2, 
+                       NVL(OBP_2, 0) AS OBP_2, 
+                       OSMCSI_2,
                        STYPE_2, SCHAR_2, REDMCH_2, GPRCSI_2, BS3G_2, DATE_INSERTION_HLR2
                 FROM (SELECT * FROM DANAD.MERGE_HLR1_HLR2_1_TE
                       UNION
@@ -481,16 +429,15 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ MERGE_HLR1_HLR2_TE created (14 UPDATEs eliminated!)');
 
     COMMIT;
 
+
     -- ================================================================================================================
-    -- STEP 11: Create reporting tables
+    -- STEP 11: Reporting tables
     -- ================================================================================================================
-    v_step := 'Creating REP_HLRS_MIS_MSISDN_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 11: Creating HLR mismatch reports');
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_HLRS_MIS_MSISDN_TE NOLOGGING AS
                 SELECT * FROM DANAD.MERGE_HLR1_HLR2_TE HH
@@ -499,12 +446,6 @@ BEGIN
     IF UTILS_INTERFACES.CREATE_TABLE('REP_HLRS_MIS_MSISDN_TE', 'DANAD', SQL_TXT) = 0 THEN
         RAISE TABLE_CREATION_FAILED;
     END IF;
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating REP_HLRS_MIS_IMSI_TE';
-    v_start_time := SYSTIMESTAMP;
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_HLRS_MIS_IMSI_TE NOLOGGING AS
                 SELECT * FROM DANAD.MERGE_HLR1_HLR2_TE HH
@@ -516,14 +457,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ HLR mismatch reports created');
 
     -- ================================================================================================================
     -- STEP 12: Create CLEAN_HLRS_MERGED_TE
     -- ================================================================================================================
-    v_step := 'Creating CLEAN_HLRS_MERGED_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 12: Creating CLEAN_HLRS_MERGED_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.CLEAN_HLRS_MERGED_TE NOLOGGING AS
                 SELECT (CASE WHEN M.MSISDN_HLR1 IS NULL THEN M.MSISDN_HLR2
@@ -541,14 +480,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ CLEAN_HLRS_MERGED_TE created');
 
     -- ================================================================================================================
     -- STEP 13: Create MERGE_SYS_HLRS_TE
     -- ================================================================================================================
-    v_step := 'Creating MERGE_SYS_HLRS_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 13: Creating MERGE_SYS_HLRS_TE (merging SYS with HLRs)');
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_SYS_HLRS_TE NOLOGGING AS
                 SELECT T.*, SUBSTR(TT.IMSI_1, 0, 6) AS PRIM_FLAG, TT.*
@@ -563,14 +500,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ MERGE_SYS_HLRS_TE created');
 
     -- ================================================================================================================
-    -- STEP 14: Create REP_CLEAN_ALL_MERGED_TE (Final merged table with SDP logic)
+    -- STEP 14: Create REP_CLEAN_ALL_MERGED_TE (with SDP logic)
     -- ================================================================================================================
-    v_step := 'Creating REP_CLEAN_ALL_MERGED_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 14: Creating REP_CLEAN_ALL_MERGED_TE (final merge with SDP)');
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_CLEAN_ALL_MERGED_TE NOLOGGING AS
                 SELECT (CASE WHEN M.MSISDN_SYS IS NULL THEN M.MSISDN_HLRS
@@ -627,12 +562,6 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating indexes on REP_CLEAN_ALL_MERGED_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('REP_CLEAN_ALL_MERGED_TE', 'DANAD', 'IX_CLEAN_ALL_MSISDN_TE', 'MSISDN') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
@@ -641,14 +570,12 @@ BEGIN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ REP_CLEAN_ALL_MERGED_TE created with indexes');
 
     -- ================================================================================================================
-    -- STEP 15: Create SYS_APN1_TE and MERGE_SYS_APN1_TE
+    -- STEP 15-16: Create APN tables
     -- ================================================================================================================
-    v_step := 'Creating SYS_APN1_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 15: Creating SYS_APN1_TE and MERGE_SYS_APN1_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.SYS_APN1_TE NOLOGGING AS
                 SELECT T.*
@@ -659,21 +586,9 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating index on SYS_APN1_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('SYS_APN1_TE', 'DANAD', 'IX_SYSAPN1_MSISDN_TE', 'MSISDN') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating MERGE_SYS_APN1_TE';
-    v_start_time := SYSTIMESTAMP;
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_SYS_APN1_TE NOLOGGING AS
                 SELECT T.*,
@@ -689,24 +604,13 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating index on MERGE_SYS_APN1_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('MERGE_SYS_APN1_TE', 'DANAD', 'IX_MERSYSAPN1_MSISDN_TE', 'MSISDN') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ APN1 tables created');
 
-    -- ================================================================================================================
-    -- STEP 16: Create SYS_APN2_TE and MERGE_SYS_APN2_TE
-    -- ================================================================================================================
-    v_step := 'Creating SYS_APN2_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 16: Creating SYS_APN2_TE and MERGE_SYS_APN2_TE');
 
     SQL_TXT := 'CREATE TABLE DANAD.SYS_APN2_TE NOLOGGING AS
                 SELECT T.*
@@ -717,21 +621,9 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating index on SYS_APN2_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('SYS_APN2_TE', 'DANAD', 'IX_SYSAPN2_MSISDN_TE', 'MSISDN') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating MERGE_SYS_APN2_TE';
-    v_start_time := SYSTIMESTAMP;
 
     SQL_TXT := 'CREATE TABLE DANAD.MERGE_SYS_APN2_TE NOLOGGING AS
                 SELECT T.*,
@@ -747,24 +639,16 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating index on MERGE_SYS_APN2_TE';
-    v_start_time := SYSTIMESTAMP;
-
     IF UTILS_INTERFACES.CREATE_INDEX('MERGE_SYS_APN2_TE', 'DANAD', 'IX_MERSYSAPN2_MSISDN_TE', 'MSISDN') = 0 THEN
         RAISE INDEX_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ APN2 tables created');
 
     -- ================================================================================================================
     -- STEP 17: Create mismatch reports
     -- ================================================================================================================
-    v_step := 'Creating REP_APN_MISMATCH_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 17: Creating mismatch reports');
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_APN_MISMATCH_TE NOLOGGING AS
                 SELECT T.ACCOUNT_NAME, T.SERVICE_TYPE_NAME, T.MSISDN, T.SERVICE_NAME,
@@ -784,12 +668,6 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating REP_CALL_FWD_MISMATCH_TE';
-    v_start_time := SYSTIMESTAMP;
-
     SQL_TXT := 'CREATE TABLE DANAD.REP_CALL_FWD_MISMATCH_TE NOLOGGING AS
                 SELECT DECODE((SUBSTR(T.IMSI_1, 0, 6)), ''415012'', 1, 2) AS PRIMARY_HLR,
                        T.MSISDN_HLR1, T.IMSI_1, T.MSISDN_HLR2, T.IMSI_2,
@@ -804,12 +682,6 @@ BEGIN
     IF UTILS_INTERFACES.CREATE_TABLE('REP_CALL_FWD_MISMATCH_TE', 'DANAD', SQL_TXT) = 0 THEN
         RAISE TABLE_CREATION_FAILED;
     END IF;
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating REP_CALL_BAR_MISMATCH_TE';
-    v_start_time := SYSTIMESTAMP;
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_CALL_BAR_MISMATCH_TE NOLOGGING AS
                 SELECT T.MSISDN_HLR1, T.IMSI_1, T.MSISDN_HLR2, T.IMSI_2,
@@ -827,14 +699,13 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ Mismatch reports created');
+
 
     -- ================================================================================================================
     -- STEP 18: Create ADM export tables
     -- ================================================================================================================
-    v_step := 'Creating REP_ADM_DMP_HLR1_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 18: Creating ADM export tables');
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_ADM_DMP_HLR1_TE NOLOGGING AS
                 SELECT T.MSISDN, T.IMSI,
@@ -850,12 +721,6 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating REP_ADM_DMP_HLR2_TE';
-    v_start_time := SYSTIMESTAMP;
-
     SQL_TXT := 'CREATE TABLE DANAD.REP_ADM_DMP_HLR2_TE NOLOGGING AS
                 SELECT T.MSISDN, T.IMSI,
                        DECODE(A.APN_ID_2, 3, ''Data Card'', 4, ''Data Card'', 7, ''GPRS'',
@@ -870,12 +735,6 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating UNION_APNS_TE';
-    v_start_time := SYSTIMESTAMP;
-
     SQL_TXT := 'CREATE TABLE DANAD.UNION_APNS_TE NOLOGGING AS
                 SELECT SS.* FROM DANAD.REP_ADM_DMP_HLR1_TE SS
                 UNION
@@ -884,12 +743,6 @@ BEGIN
     IF UTILS_INTERFACES.CREATE_TABLE('UNION_APNS_TE', 'DANAD', SQL_TXT) = 0 THEN
         RAISE TABLE_CREATION_FAILED;
     END IF;
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating REP_APN_SYS_ALL_TE';
-    v_start_time := SYSTIMESTAMP;
 
     SQL_TXT := 'CREATE TABLE DANAD.REP_APN_SYS_ALL_TE NOLOGGING AS
                 SELECT AA.MSISDN, AA.IMSI, AA.COMPANION_PRODUCT, AA.SERVICE_TYPE_NAME
@@ -903,12 +756,6 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'Creating LIST_NULL_CP_GROUP_TE';
-    v_start_time := SYSTIMESTAMP;
-
     SQL_TXT := 'CREATE TABLE DANAD.LIST_NULL_CP_GROUP_TE NOLOGGING AS
                 SELECT T.MSISDN, COUNT(T.MSISDN) AS COUNT_NUM
                 FROM DANAD.REP_APN_SYS_ALL_TE T
@@ -919,14 +766,12 @@ BEGIN
         RAISE TABLE_CREATION_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ ADM export tables created');
 
     -- ================================================================================================================
-    -- STEP 19: Remove duplicates from REP_APN_SYS_ALL_TE
+    -- STEP 19: Remove duplicates
     -- ================================================================================================================
-    v_step := 'Removing duplicates from REP_APN_SYS_ALL_TE';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 19: Removing duplicates from REP_APN_SYS_ALL_TE');
 
     SQL_TXT := 'DELETE FROM DANAD.REP_APN_SYS_ALL_TE T
                 WHERE T.MSISDN IN (SELECT V.MSISDN FROM DANAD.LIST_NULL_CP_GROUP_TE V)
@@ -936,44 +781,35 @@ BEGIN
         RAISE TABLE_INSERT_FAILED;
     END IF;
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ Duplicates removed');
 
     -- ================================================================================================================
-    -- STEP 20: Export to ADM and FTP transfer
+    -- STEP 20: Export and FTP
     -- ================================================================================================================
-    v_step := 'Exporting to ADM TXT file';
-    v_start_time := SYSTIMESTAMP;
+    log_step('STEP 20: Exporting to ADM and FTP transfer');
 
     FAFIF.RECONCILIATION_INTERFACES.EXPORT_TABLE_TO_ADM_TXT('DANAD', 'REP_APN_SYS_ALL_TE');
-
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
-
-    v_step := 'FTP file transfer';
-    v_start_time := SYSTIMESTAMP;
 
     CURRENT_DATE := TO_CHAR(TO_DATE(TO_CHAR(SYSDATE, 'DDMMYYYY'), 'DDMMYYYY'), 'DDMMYYYY');
     DBAUSER.P_FTP('192.168.41.13', 'ftp_prov', '123Prov', 'OUTPUT_BOPS',
                   'reconciliation_' || CURRENT_DATE || '.csv',
                   'reconciliation_' || CURRENT_DATE || '.txt');
 
-    v_end_time := SYSTIMESTAMP;
-    log_activity(v_step, v_start_time, v_end_time, NULL);
+    log_step('✓ Export and FTP completed');
 
-    DBMS_OUTPUT.PUT_LINE('========================================');
-    DBMS_OUTPUT.PUT_LINE('P1_MAIN_SYS_INTERFACES_TE - Completed Successfully');
-    DBMS_OUTPUT.PUT_LINE('========================================');
+    log_step('========================================');
+    log_step('P1_MAIN_SYS_INTERFACES_OLD - COMPLETED');
+    log_step('========================================');
 
     RESULT := 'SUCCESS';
 
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('========================================');
-        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
-        DBMS_OUTPUT.PUT_LINE('========================================');
+        log_step('========================================');
+        log_step('ERROR: ' || SQLERRM);
+        log_step('========================================');
         RESULT := 'FAILURE';
         RAISE;
 
-END P1_MAIN_SYS_INTERFACES_TE;
+END P1_MAIN_SYS_INTERFACES_OLD;
 /
