@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE DANAD.P1_MAIN_SYS_INTERFACES_TE(
+CREATE OR REPLACE PROCEDURE P1_MAIN_SYS_INTERFACES_OLD(
     INTEGRATION_LOG_ID IN VARCHAR2 DEFAULT '0',
     RESULT OUT VARCHAR2,
     P_ENT_TYPE IN NUMBER DEFAULT 4,
@@ -49,11 +49,11 @@ CREATE OR REPLACE PROCEDURE DANAD.P1_MAIN_SYS_INTERFACES_TE(
 BEGIN
 
     log_step('========================================');
-    log_step('P1_MAIN_SYS_INTERFACES_TE - START');
+    log_step('P1_MAIN_SYS_INTERFACES_OLD - START');
     log_step('Release: ' || RELEASE);
     log_step('========================================');
 
-    UTILS_INTERFACES.INTERFACE_NAME := 'P1_MAIN_SYS_INTERFACES_TE';
+    UTILS_INTERFACES.INTERFACE_NAME := 'P1_MAIN_SYS_INTERFACES_OLD';
 
     -- ================================================================================================================
     -- STEP 1: Create SYS_MINSAT_TE (CS4 DMP)
@@ -798,7 +798,7 @@ BEGIN
     log_step('✓ Export and FTP completed');
 
     log_step('========================================');
-    log_step('P1_MAIN_SYS_INTERFACES_TE - COMPLETED');
+    log_step('P1_MAIN_SYS_INTERFACES_OLD - COMPLETED');
     log_step('========================================');
 
     RESULT := 'SUCCESS';
@@ -811,5 +811,5 @@ EXCEPTION
         RESULT := 'FAILURE';
         RAISE;
 
-END P1_MAIN_SYS_INTERFACES_TE;
+END P1_MAIN_SYS_INTERFACES_OLD;
 /
