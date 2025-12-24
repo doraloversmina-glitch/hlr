@@ -1,0 +1,16 @@
+# Object files
+*.o
+
+# Executables
+push_swap
+checker
+
+# Mac specific
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
