@@ -49,6 +49,7 @@ int	main(int argc, char **argv)
 		stack_clear(&data.a);
 		return (0);
 	}
+	assign_indices(&data);
 	execute_strategy(&data, strategy);
 	print_benchmark(&data);
 	stack_clear(&data.a);

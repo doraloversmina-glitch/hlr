@@ -72,11 +72,13 @@ static int	parse_single_arg(t_data *data, char *arg)
 {
 	char	**numbers;
 	int		i;
+	int		count;
 
 	numbers = ft_split(arg, ' ');
 	if (!numbers)
 		return (0);
 	i = 0;
+	count = 0;
 	while (numbers[i])
 	{
 		if (!add_number_to_stack(data, numbers[i]))
@@ -84,10 +86,38 @@ static int	parse_single_arg(t_data *data, char *arg)
 			free_split(numbers);
 			return (0);
 		}
+		count++;
 		i++;
 	}
 	free_split(numbers);
+	if (count == 0)
+		return (0);
 	return (1);
+}
+
+static int	parse_flags(int argc, char **argv, t_data *data, t_strategy *strat)
+{
+	int	i;
+
+	i = 1;
+	*strat = ADAPTIVE;
+	while (i < argc && argv[i][0] == '-' && argv[i][1] == '-')
+	{
+		if (ft_strcmp(argv[i], "--simple") == 0)
+			*strat = SIMPLE;
+		else if (ft_strcmp(argv[i], "--medium") == 0)
+			*strat = MEDIUM;
+		else if (ft_strcmp(argv[i], "--complex") == 0)
+			*strat = COMPLEX;
+		else if (ft_strcmp(argv[i], "--adaptive") == 0)
+			*strat = ADAPTIVE;
+		else if (ft_strcmp(argv[i], "--bench") == 0)
+			data->bench_mode = 1;
+		else
+			return (-1);
+		i++;
+	}
+	return (i);
 }
 
 int	parse_args(int argc, char **argv, t_data *data, t_strategy *strategy)
@@ -95,30 +125,11 @@ int	parse_args(int argc, char **argv, t_data *data, t_strategy *strategy)
 	int	i;
 	int	start;
 
-	*strategy = ADAPTIVE;
-	start = 1;
-	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == '-')
-	{
-		if (ft_strcmp(argv[1], "--simple") == 0)
-			*strategy = SIMPLE;
-		else if (ft_strcmp(argv[1], "--medium") == 0)
-			*strategy = MEDIUM;
-		else if (ft_strcmp(argv[1], "--complex") == 0)
-			*strategy = COMPLEX;
-		else if (ft_strcmp(argv[1], "--adaptive") == 0)
-			*strategy = ADAPTIVE;
-		else if (ft_strcmp(argv[1], "--bench") != 0)
-			return (0);
-		if (ft_strcmp(argv[1], "--bench") == 0)
-			data->bench_mode = 1;
-		else
-			start = 2;
-		if (argc > 2 && ft_strcmp(argv[2], "--bench") == 0)
-		{
-			data->bench_mode = 1;
-			start = 3;
-		}
-	}
+	start = parse_flags(argc, argv, data, strategy);
+	if (start < 0)
+		return (0);
+	if (start >= argc)
+		return (0);
 	i = start;
 	while (i < argc)
 	{
@@ -126,9 +137,10 @@ int	parse_args(int argc, char **argv, t_data *data, t_strategy *strategy)
 			return (0);
 		i++;
 	}
-	if (!data->a || has_duplicates(data->a))
+	if (!data->a)
+		return (0);
+	if (has_duplicates(data->a))
 		return (0);
 	data->size = stack_size(data->a);
-	assign_indices(data);
 	return (1);
 }
